@@ -77,48 +77,6 @@ def _add_panel_scene(unit, stim_bank, *, include_text: bool = True, text_id: str
         unit.add_stim(stim_bank.get(text_id))
 
 
-def _show_timed_phase(
-    *,
-    stim_bank,
-    trigger_runtime,
-    win,
-    kb,
-    settings,
-    trial_id: int,
-    block_id: str,
-    condition_id: str,
-    phase: str,
-    trigger_name: str | None,
-    unit_label: str,
-    duration_s: float,
-    valid_keys: list[str],
-    task_factors: dict[str, Any],
-    stim_ids: list[str],
-    add_stims_fn,
-):
-    unit = _make_unit(
-        win=win,
-        kb=kb,
-        trigger_runtime=trigger_runtime,
-        unit_label=unit_label,
-        phase=phase,
-        trial_id=trial_id,
-        block_id=block_id,
-        condition_id=condition_id,
-        deadline_s=duration_s,
-        valid_keys=valid_keys,
-        task_factors=task_factors,
-        stim_ids=stim_ids,
-    )
-    add_stims_fn(unit, stim_bank)
-
-    start_s = time.perf_counter()
-    trigger_key = f"{trigger_name or phase}_onset"
-    unit.show(duration=duration_s, onset_trigger=settings.triggers.get(trigger_key))
-    elapsed_s = max(0.0, time.perf_counter() - start_s)
-    return elapsed_s
-
-
 def run_trial(
     win,
     kb,
@@ -195,7 +153,7 @@ def run_trial(
     instruction_unit.add_stim(stim_bank.get("instruction_text"))
     trigger_runtime.send(settings.triggers.get("instruction_onset"))
     start_s = time.perf_counter()
-    instruction_unit.wait_and_continue()
+    instruction_unit.wait_and_continue().to_dict(trial_data)
     elapsed_s = max(0.0, time.perf_counter() - start_s)
     phase_sequence.append("instruction")
     phase_elapsed["instruction"] = elapsed_s
@@ -222,7 +180,9 @@ def run_trial(
     baseline_unit.add_stim(stim_bank.get("baseline_text"))
     baseline_unit.add_stim(stim_bank.get("fixation"))
     start_s = time.perf_counter()
-    baseline_unit.show(duration=baseline_duration_s, onset_trigger=settings.triggers.get("baseline_onset"))
+    baseline_unit.show(duration=baseline_duration_s, onset_trigger=settings.triggers.get("baseline_onset")).to_dict(
+        trial_data
+    )
     baseline_elapsed_s = max(0.0, time.perf_counter() - start_s)
     phase_sequence.append("baseline_acclimation")
     phase_elapsed["baseline_acclimation"] = baseline_elapsed_s
@@ -267,7 +227,10 @@ def run_trial(
     prep_unit.add_stim(stim_bank.get("camera_label"))
     prep_unit.add_stim(stim_bank.get("prep_text"))
     start_s = time.perf_counter()
-    prep_unit.show(duration=speech_preparation_duration_s, onset_trigger=settings.triggers.get("prep_onset"))
+    prep_unit.show(
+        duration=speech_preparation_duration_s,
+        onset_trigger=settings.triggers.get("prep_onset"),
+    ).to_dict(trial_data)
     prep_elapsed_s = max(0.0, time.perf_counter() - start_s)
     phase_sequence.append("speech_preparation")
     phase_elapsed["speech_preparation"] = prep_elapsed_s
@@ -312,7 +275,9 @@ def run_trial(
     speech_unit.add_stim(stim_bank.get("camera_label"))
     speech_unit.add_stim(stim_bank.get("speech_text"))
     start_s = time.perf_counter()
-    speech_unit.show(duration=speech_duration_s, onset_trigger=settings.triggers.get("speech_onset"))
+    speech_unit.show(duration=speech_duration_s, onset_trigger=settings.triggers.get("speech_onset")).to_dict(
+        trial_data
+    )
     speech_elapsed_s = max(0.0, time.perf_counter() - start_s)
     phase_sequence.append("speech_delivery")
     phase_elapsed["speech_delivery"] = speech_elapsed_s
@@ -358,7 +323,10 @@ def run_trial(
     math_unit.add_stim(stim_bank.get("camera_label"))
     math_unit.add_stim(stim_bank.get("math_text"))
     start_s = time.perf_counter()
-    math_unit.show(duration=mental_arithmetic_duration_s, onset_trigger=settings.triggers.get("math_onset"))
+    math_unit.show(
+        duration=mental_arithmetic_duration_s,
+        onset_trigger=settings.triggers.get("math_onset"),
+    ).to_dict(trial_data)
     math_elapsed_s = max(0.0, time.perf_counter() - start_s)
     phase_sequence.append("mental_arithmetic")
     phase_elapsed["mental_arithmetic"] = math_elapsed_s
@@ -385,7 +353,9 @@ def run_trial(
     recovery_unit.add_stim(stim_bank.get("recovery_text"))
     recovery_unit.add_stim(stim_bank.get("fixation"))
     start_s = time.perf_counter()
-    recovery_unit.show(duration=recovery_duration_s, onset_trigger=settings.triggers.get("recovery_onset"))
+    recovery_unit.show(duration=recovery_duration_s, onset_trigger=settings.triggers.get("recovery_onset")).to_dict(
+        trial_data
+    )
     recovery_elapsed_s = max(0.0, time.perf_counter() - start_s)
     phase_sequence.append("recovery")
     phase_elapsed["recovery"] = recovery_elapsed_s
@@ -424,7 +394,7 @@ def run_trial(
     # capture_response(keys=["space"], duration=0.1) is kept as a responder-contract marker.
     trigger_runtime.send(settings.triggers.get("good_bye_onset"))
     start_s = time.perf_counter()
-    good_bye_unit.wait_and_continue()
+    good_bye_unit.wait_and_continue().to_dict(trial_data)
     good_bye_elapsed_s = max(0.0, time.perf_counter() - start_s)
     phase_sequence.append("good_bye")
     phase_elapsed["good_bye"] = good_bye_elapsed_s
